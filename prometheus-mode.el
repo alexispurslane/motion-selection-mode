@@ -1,6 +1,6 @@
 ;;; prometheus-mode.el --- A mode to add a text editing grammar to emacs, built on top of god-mode -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2024-2025 Alexis Purslane
+;; Copyright (C) 2024-2025 Alexis Purslane <alexispurslane@pm.me>
 
 ;; Author: Alexis Purslane <alexispurslane@pm.me>
 ;; Keywords: tools
@@ -10,17 +10,6 @@
 
 ;; This file is not part of GNU Emacs
 
-;; This program is free software: you can redistribute it and/or
-;; modify it under the terms of the GNU General Public License as
-;; published by the Free Software Foundation, either version 3 of
-;; the License, or (at your option) any later version. This
-;; program is distributed in the hope that it will be useful, but
-;; WITHOUT ANY WARRANTY; without even the implied warranty of
-;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-;; GNU General Public License for more details. You should have
-;; received a copy of the GNU General Public License along with
-;; this program. If not, see <https://www.gnu.org/licenses/>.
-
 ;;; Commentary:
 
 ;; Prometheus mode introduces a truly vanilla-emacs friendly text
@@ -29,6 +18,23 @@
 ;; keybindings and mnemonics, and all the same concepts and
 ;; behavior, as regular emacs text editing, while also giving you
 ;; the advantages of a full grammar for text editing.
+
+;;; License:
+
+;; This program is free software: you can redistribute it and/or
+;; modify it under the terms of the GNU General Public License as
+;; published by the Free Software Foundation, either version 3 of
+;; the License, or (at your option) any later version.
+;;
+;; This program is distributed in the hope that it will be
+;; useful, but WITHOUT ANY WARRANTY; without even the implied
+;; warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+;; PURPOSE. See the GNU General Public License for more
+;; details.
+;; 
+;; You should have received a copy of the GNU General Public
+;; License along with this program. If not, see
+;; <https://www.gnu.org/licenses/>.
 
 ;;; Code:
 
