@@ -6,7 +6,7 @@
 ;; Created 14 Dec 2024
 ;; Keywords: tools
 ;; Package-Requires: (god-mode whole-line-or-region)
-;; Version: 0.1
+;; Version 0.1
 ;; URL: https://github.com/alexispurslane/prometheus-mode
 
 ;; This file is not part of GNU Emacs
