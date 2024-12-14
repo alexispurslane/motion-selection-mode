@@ -6,6 +6,18 @@ Currently, Prometheus Mode is in a highly experimental state. I'm
 regularly dogfooding it, but it still has several annoying bugs
 and kinks to work out.
 
+** Overview
+
+
+Prometheus mode introduces a truly vanilla-Emacs friendly text
+editing grammar, that works with modifier keys or using modal
+editing via god mode, and which preserves all the same
+keybindings and mnemonics, and all the same concepts and
+behavior, as regular Emacs text editing, while also giving you
+the advantages of a full grammar for text manipulation like you'd
+find in Vim.
+
+
 ** Background
 
 One of the key advantages of Vim and other modal editors over

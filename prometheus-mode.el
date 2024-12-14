@@ -224,14 +224,14 @@ current buffer in God Mode."
     ;; half a second, assume we're done searching and want to
     ;; now proceed through the search results; we can always
     ;; hit i again to change it
-    (defun isearch-forward-auto-timer ()
+    (defun prometheus-isearch-forward-auto-timer ()
         (interactive)
         (run-with-idle-timer prometheus-auto-timer-time nil
                              (lambda ()
                                  (message "Search finished, activating god search mode")
                                  (god-mode-isearch-activate)))
         (isearch-forward))
-    (defun isearch-backward-auto-timer ()
+    (defun prometheus-isearch-backward-auto-timer ()
         (interactive)
         (run-with-idle-timer prometheus-auto-timer-time nil
                              (lambda ()
@@ -259,8 +259,8 @@ current buffer in God Mode."
     ;; bindings. Let's fix that
     (define-key global-map (kbd "RET") (lambda () (interactive) (newline) (god-local-mode -1)))
     (define-key global-map (kbd "<backspace>") (lambda () (interactive) (delete-char -1) (god-local-mode -1)))
-    (define-key global-map (kbd "C-r") #'isearch-backward-auto-timer)
-    (define-key global-map (kbd "C-s") #'isearch-forward-auto-timer)
+    (define-key global-map (kbd "C-r") #'prometheus-isearch-backward-auto-timer)
+    (define-key global-map (kbd "C-s") #'prometheus-isearch-forward-auto-timer)
     ;; being able to apply a region command to a whole line by
     ;; default saves us from learning more commands, and saves
     ;; keystrokes
