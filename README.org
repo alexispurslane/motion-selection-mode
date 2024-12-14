@@ -1,4 +1,4 @@
-* Prometheus Mode
+* Prometheus Mode: A Vanilla-Emacs-First Text Editing Grammar Minor Mode
 
 ** Status: ⚠️ Under Construction ⚠️
 
@@ -65,11 +65,19 @@ There have been a few, fairly popular, attempts to make modal
 editing grammars that integrate better with Emacs, like Meow and
 Boon, but most of these take the form of simply implementing a
 text editing grammar that uses Emacs's built in commands under
-the hood and binds a few less keys, and offer something like
-`god-mode' as a leader key, while still using command bindings
-and combinations and behaviors that don't really align with
-vanilla Emacs, meaning that the problem is reduced, but not
-eliminated.
+the hood and binds a few less keys, while offering something like
+`god-mode' as a leader key. The problem here is that while the
+smaller keymaps will overtly clash with other Emacs keymaps less
+due to their smaller size, they still adhere to different
+mnemonics and different keybinding norms than traditional Emacs
+(for instance, HJKL vs BNPF), so you're still faced with the
+problem of rebinding everything (and losing existing
+documentation) or just accepting inconsistent keymaps.
+Additionally, while these modes tend to more directly use Emacs's
+text editing commands, they still have a fundamentally different
+set of concepts (text objects, movements, operations) and tend to
+still put a layer on top of those vanilla editing commands. This
+is better, but still not perfect.
 
 Then there's God-mode. God mode is promising, but it primarily
 acts as a sort of grammar for describing executing key chords
@@ -99,22 +107,23 @@ specifying text objects you'd always be specifying either words
 or characters or, if you're lucky, lines. However, Emacs does in
 fact offer a rich set of text objects baked into commands for
 selecting or moving by them (as well as doing other things to
-them, but those aren't relevant right now). Now, we could use
-this as a sort of mental jujutsu practice in existing Emacs, by
-just always remembering to use selection commands and then
-region commands, or always remembering to place a mark, then use
-a movement command, then do a region command, but the second
-option is cumbersome, and the first option (using the built in
-text object selection commands) falls short of Vim's text
-editing grammar's power by not unifying motion and text object
-specification commands. Prometheus Mode's solution is to adopt
-the Kakoune-style editing approach of making motion commands
-automatically select the text object just passed over, and also
-place marks around each object as you pass it (for commands that
-take regions via marks as arguments like `transpose-regions' so
-you can use them /in place of/ more specific commands like
-`transpose-words'). Thus, you can compose Emacs's editing
-commands into a text editing grammar very easily!
+them, but those aren't relevant right now).
+
+Now, we could use this as a sort of mental jujutsu practice in
+existing Emacs, by just always remembering to use selection
+commands and then region commands, or always remembering to place
+a mark, then use a movement command, then do a region command,
+but the second option is cumbersome, and the first option (using
+the built in text object selection commands) falls short of Vim's
+text editing grammar's power by not unifying motion and text
+object specification commands. Prometheus Mode's solution is to
+adopt the Kakoune-style editing approach of making motion
+commands automatically select the text object just passed over,
+and also place marks around each object as you pass it (for
+commands that take regions via marks as arguments like
+`transpose-regions' so you can use them /in place of/ more
+specific commands like `transpose-words'). Thus, you can compose
+Emacs's editing commands into a text editing grammar very easily!
 
 The downsides to this, of course, are the ones inherent to the
 Kakoune-style reversed text editing grammar model: you need to
