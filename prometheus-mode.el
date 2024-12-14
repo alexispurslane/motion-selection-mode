@@ -139,6 +139,7 @@ timer, auto-deselection, etc."
       (setq prometheus--intentional-region-active t))
      ((and prometheus--last-point-position
            (not prometheus--intentional-region-active)
+           (> (abs (- prometheus--last-point-position (point))) 1)
            (not (memq this-command '(forward-char
                                      backward-char
                                      self-insert-command
@@ -153,6 +154,7 @@ timer, auto-deselection, etc."
            (not (memq major-mode prometheus-excluded-major-modes))
            (not (and (boundp 'rectangle-mark-mode) rectangle-mark-mode))
            (not isearch-mode))
+      (message "dropping mark")
       (let ((inhibit-message t))
           (run-with-idle-timer
            (* 1.5 prometheus-auto-timer-time) nil
@@ -167,13 +169,37 @@ timer, auto-deselection, etc."
           (push-mark prometheus--last-point-position nil t))))
     (setq-local prometheus--last-point-position (point)))
 
+;; Extend quake's version of `escape-dwim' to cancel god
+;; mode just like it does evil mode, and quit
+;; autocompletion as well since that's something it
+;; doesn't take care of unlike evil mode's equivalent
+(defun prometheus--escape-dwim ()
+    "Kill, exit, escape, stop, everything, now, and put me back in the
+current buffer in God Mode."
+    (interactive)
+    (message "Escape")
+    (cond (completion-in-region-mode (corfu-quit))
+          ((not god-local-mode)
+           (god-local-mode 1))
+          (isearch-mode                   (isearch-exit))
+          (overwrite-mode                 (overwrite-mode -1))
+          ((eq last-command 'mode-exited) nil)
+          ((> (minibuffer-depth) 0)       (abort-recursive-edit))
+          ((region-active-p)              (deactivate-mark))
+          (current-prefix-arg             nil)
+          ((> (recursion-depth) 0)        (exit-recursive-edit))
+          (buffer-quit-function           (funcall buffer-quit-function))
+          ((not (one-window-p t))         (delete-window))
+          ((string-match "^ \\*" (buffer-name (current-buffer)))
+           (bury-buffer))))
+
 ;;;###autoload
 (define-minor-mode prometheus-mode
     "A modal editing minor mode for Emacs built on top of `god-mode'
 that gives Emacs users a Vim-like text editing grammar by making
 motion commands select the text objects that they step over, and
 then treating region commands as general-purpose verbs to act on
-text objects, not unlike the grammar of meow, but still using the
+;; text objects, not unlike the grammar of meow, but still using the
 entirely Emacs-native set of commands, concepts, mnemonics, and
 keymaps, requiring no extra integration with the rest of emacs at
 all."
@@ -198,35 +224,6 @@ all."
     ;; able to edit text automatically without interference
     (add-hook 'overwrite-mode-hook #'prometheus-god-mode-toggle-on-overwrite)
     
-    ;; Extend quake's version of `escape-dwim' to cancel god
-    ;; mode just like it does evil mode, and quit
-    ;; autocompletion as well since that's something it
-    ;; doesn't take care of unlike evil mode's equivalent
-    (defun prometheus--escape-dwim ()
-        "Kill, exit, escape, stop, everything, now, and put me back in the
-current buffer in God Mode."
-        (interactive)
-        (message "Escape")
-        (when (fboundp 'corfu-quit)
-            (corfu-quit))
-        (cond ((not god-local-mode)           (god-local-mode 1))
-              (isearch-mode                   (isearch-exit))
-              (overwrite-mode                 (overwrite-mode -1))
-              ((eq last-command 'mode-exited) nil)
-              ((> (minibuffer-depth) 0)       (abort-recursive-edit))
-              ((region-active-p)              (deactivate-mark))
-              (current-prefix-arg             nil)
-              ((> (recursion-depth) 0)        (exit-recursive-edit))
-              (buffer-quit-function           (funcall buffer-quit-function))
-              ((not (one-window-p t))         (delete-window))
-              ((string-match "^ \\*" (buffer-name (current-buffer)))
-               (bury-buffer)))
-
-        ;; reset everything, so we get intuitive behavior
-        ;; (no selections accidentally automatically
-        ;; started at point when we escape)
-        (setq mark-ring nil)
-        (setq-local prometheus--last-point-position (point)))
     (global-set-key (kbd "<escape>") 'prometheus--escape-dwim)
     ;; next we need to provide a way to exit god mode!
     (define-key god-local-mode-map (kbd "i") #'god-local-mode)
@@ -263,7 +260,7 @@ current buffer in God Mode."
     ;; object commands, equivalent to vim probably, or
     ;; roughly thereto, but many of them don't have
     ;; bindings. Let's fix that
-    (define-key global-map (kbd "RET") (lambda () (interactive) (newline) (god-local-mode -1)))
+    (define-key global-map (kbd "RET") (lambda () (interactive) (electric-newline-and-maybe-indent) (god-local-mode -1)))
     (define-key global-map (kbd "<backspace>") (lambda () (interactive) (delete-char -1) (god-local-mode -1)))
     (define-key global-map (kbd "C-r") #'prometheus-isearch-backward-auto-timer)
     (define-key global-map (kbd "C-s") #'prometheus-isearch-forward-auto-timer)
