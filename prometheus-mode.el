@@ -3,8 +3,6 @@
 ;; Copyright (C) 2024-2025 Alexis Purslane <alexispurslane@pm.me>
 
 ;; Author: Alexis Purslane <alexispurslane@pm.me>
-;; Keywords: tools
-;; Package-Requires: (god-mode whole-line-or-region)
 ;; URL: https://github.com/alexispurslane/prometheus-mode
 ;; Version: 0.1
 
@@ -45,7 +43,7 @@
     "Customization group for `prometheus-mode'"
     :group 'editing
     :group 'god)
-(defcustom prometheus-excluded-major-modes '(dired-mode gnus-group-mode gnus-summary-mode)
+(defcustom prometheus-excluded-major-modes '(magit-mode dired-mode gnus-group-mode gnus-summary-mode)
     "The list of modes that auto-selection will not occur in, because it doesn't make sense."
     :type 'listp
     :group 'prometheus)
@@ -53,6 +51,7 @@
     "The amount of idle time to wait until doing something, across several `prometheus-mode' features, including `isearch-forward-auto-timer' and backward timer, auto-deselection, etc."
     :type 'numberp
     :group 'prometheus)
+;;;###autoload
 (define-minor-mode prometheus-mode
     "A modal editing minor mode for Emacs built on top of `god-mode' that gives Emacs users a Vim-like text editing grammar by making motion commands select the text objects that they step over, and then treating region commands as general-purpose verbs to act on text objects, not unlike the grammar of meow, but still using the entirely Emacs-native set of commands, concepts, mnemonics, and keymaps, requiring no extra integration with the rest of emacs at all."
     :global t
@@ -221,14 +220,15 @@
         ;; object commands, equivalent to vim probably, or
         ;; roughly thereto, but many of them don't have
         ;; bindings. Let's fix that
-        (quake-emacs-define-key global-map
-            "RET"         (lambda () (interactive) (newline) (god-local-mode -1))
-            "<backspace>" (lambda () (interactive) (delete-char -1) (god-local-mode -1))
-            "C-s"         #'isearch-forward-auto-timer
-            "C-r"         #'isearch-backward-auto-timer))
+        (define-key global-map (kbd "RET") (lambda () (interactive) (newline) (god-local-mode -1)))
+        (define-key global-map (kbd "<backspace>") (lambda () (interactive) (delete-char -1) (god-local-mode -1)))
+        (define-key global-map (kbd "C-r") #'isearch-backward-auto-timer)
+        (define-key global-map (kbd "C-s") #'isearch-forward-auto-timer))
     ;; being able to apply a region command to a whole line by
     ;; default saves us from learning more commands, and saves
     ;; keystrokes
     (whole-line-or-region-global-mode))
+
+(provide 'prometheus-mode)
 
 ;;; prometheus-mode.el ends here
