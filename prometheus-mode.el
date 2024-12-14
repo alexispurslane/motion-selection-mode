@@ -1,11 +1,10 @@
-;;; prometheus-mode.el --- A mode to add a text editing grammar to Emacs, built on top of god-mode -*- lexical-binding: t; -*-
-
-;; Copyright (C) 2024-2025 Alexis Purslane <alexispurslane@pm.me>
+;;; prometheus-mode.el --- A mode to add a text editing grammar to Emacs, built on top of god-mode -*- lexical-binding: t -*-
 
 ;; Author: Alexis Purslane <alexispurslane@pm.me>
 ;; URL: https://github.com/alexispurslane/prometheus-mode
+;; Package-Requires: ((emacs "24.4") (god-mode) (whole-line-or-region))
 ;; Version: 0.1
-;; Package-Requires: (god-mode whole-line-or-region (emacs "24.4"))
+;; Keywords: tools
 
 ;; This file is not part of GNU Emacs
 
@@ -20,6 +19,8 @@
 
 ;;; License:
 
+;; Copyright (C) 2024-2025 Alexis Purslane <alexispurslane@pm.me>
+;;
 ;; This program is free software: you can redistribute it and/or
 ;; modify it under the terms of the GNU General Public License as
 ;; published by the Free Software Foundation, either version 3 of
@@ -96,45 +97,40 @@ all."
         ;; just selected, automatically deselect it; it's
         ;; likely that was just a trailing selection as a
         ;; result of moving through the buffer!
-        (if (and god-local-mode
-                 ;; if the minibuffer is open and focused,
-                 ;; then the user is probably in the middle
-                 ;; of running a command by name on the
-                 ;; current selection, so don't deselect
-                 (not (minibuffer-window-active-p (selected-window)))
-                 ;; if the which key buffer is open the user
-                 ;; is probably trying to figure out what to
-                 ;; do/enter, so don't deselect what they
-                 ;; selected yet
-                 (not (and (boundp 'which-key--buffer)
-                           (get-buffer-window which-key--buffer)))
-                 ;; if god-mode-self-insert is running right
-                 ;; now, that means the user is in the middle
-                 ;; of entering a god mode command on this
-                 ;; region; don't deselect
-                 (not (and (bound-and-true-p god-local-mode)
-                           (eq this-command 'god-mode-self-insert)))
-                 ;; copied from which-key's code to detect
-                 ;; the current prefix key if the user has
-                 ;; entered one or more prefix keys they're
-                 ;; in the middle of executing a non-god-mode
-                 ;; command on the region, also don't
-                 ;; deselect
-                 (let ((this-command-keys (this-single-command-keys)))
-                     (when (and (vectorp this-command-keys)
-                                (> (length this-command-keys) 0)
-                                (eq (aref this-command-keys 0) 'key-chord)
-                                (bound-and-true-p key-chord-mode))
-                         (setq this-command-keys (this-single-command-raw-keys)))
-                     (length= this-command-keys 0)))
-                ;; deselect the current region and update the internal selection variables
-                (progn
-                    (pop-mark)
-                    (setq-local prometheus--last-point-position (point)))
-            ;; come back later
-            (run-with-idle-timer
-             (* 1.5 prometheus-auto-timer-time) nil
-             #'prometheus--deselect)))
+        (when (and god-local-mode
+                   ;; if the minibuffer is open and focused,
+                   ;; then the user is probably in the middle
+                   ;; of running a command by name on the
+                   ;; current selection, so don't deselect
+                   (not (minibuffer-window-active-p (selected-window)))
+                   ;; if the which key buffer is open the user
+                   ;; is probably trying to figure out what to
+                   ;; do/enter, so don't deselect what they
+                   ;; selected yet
+                   (not (and (boundp 'which-key--buffer)
+                             (get-buffer-window which-key--buffer)))
+                   ;; if god-mode-self-insert is running right
+                   ;; now, that means the user is in the middle
+                   ;; of entering a god mode command on this
+                   ;; region; don't deselect
+                   (not (and (bound-and-true-p god-local-mode)
+                             (eq this-command 'god-mode-self-insert)))
+                   ;; copied from which-key's code to detect
+                   ;; the current prefix key if the user has
+                   ;; entered one or more prefix keys they're
+                   ;; in the middle of executing a non-god-mode
+                   ;; command on the region, also don't
+                   ;; deselect
+                   (let ((this-command-keys (this-single-command-keys)))
+                       (when (and (vectorp this-command-keys)
+                                  (> (length this-command-keys) 0)
+                                  (eq (aref this-command-keys 0) 'key-chord)
+                                  (bound-and-true-p key-chord-mode))
+                           (setq this-command-keys (this-single-command-raw-keys)))
+                       (length= this-command-keys 0)))
+            ;; deselect the current region and update the internal selection variables
+            (pop-mark)
+            (setq-local prometheus--last-point-position (point))))
     (defun prometheus--motion-selection ()
         (cond
          ((eq this-command 'set-mark-command)
@@ -153,7 +149,7 @@ all."
                                          expreg-contract
                                          undo)))
                (not (memq major-mode prometheus-excluded-major-modes))
-               (not rectangle-mark-mode)
+               (not (and (boundp 'rectangle-mark-mode) rectangle-mark-mode))
                (not isearch-mode))
           (let ((inhibit-message t))
               (run-with-idle-timer
@@ -183,28 +179,32 @@ all."
     ;; mode just like it does evil mode, and quit
     ;; autocompletion as well since that's something it
     ;; doesn't take care of unlike evil mode's equivalent
-    (advice-add 'escape-dwim :around (lambda (oldfun)
-                                         (when (fboundp 'corfu-quit)
-                                             (corfu-quit))
-                                         (cond
-                                          ((and (not evil-mode) (not god-local-mode))
-                                           (god-local-mode 1)
-                                           ;; reset
-                                           ;; everything, so
-                                           ;; we get
-                                           ;; intuitive
-                                           ;; behavior (no
-                                           ;; selections
-                                           ;; accidentally
-                                           ;; automatically
-                                           ;; started at
-                                           ;; point when we
-                                           ;; escape)
-                                           (pop-mark)
-                                           (setq prometheus--last-point-position nil)
-                                           (setq prometheus--intentional-region-active nil))
-                                          (overwrite-mode (overwrite-mode -1))
-                                          (t (funcall oldfun)))))
+    (defun prometheus--escape-dwim ()
+        "Kill, exit, escape, stop, everything, now, and put me back in the
+current buffer in God Mode."
+        (interactive)
+        (message "Escape")
+        (when (fboundp 'corfu-quit)
+            (corfu-quit))
+        (cond ((not god-local-mode)           (god-local-mode 1))
+              (isearch-mode                   (isearch-exit))
+              (overwrite-mode                 (overwrite-mode -1))
+              ((eq last-command 'mode-exited) nil)
+              ((> (minibuffer-depth) 0)       (abort-recursive-edit))
+              ((region-active-p)              (deactivate-mark))
+              (current-prefix-arg             nil)
+              ((> (recursion-depth) 0)        (exit-recursive-edit))
+              (buffer-quit-function           (funcall buffer-quit-function))
+              ((not (one-window-p t))         (delete-window))
+              ((string-match "^ \\*" (buffer-name (current-buffer)))
+               (bury-buffer)))
+
+        ;; reset everything, so we get intuitive behavior
+        ;; (no selections accidentally automatically
+        ;; started at point when we escape)
+        (setq mark-ring nil)
+        (setq-local prometheus--last-point-position (point)))
+    (global-set-key (kbd "<escape>") 'prometheus--escape-dwim)
     ;; next we need to provide a way to exit god mode!
     (define-key god-local-mode-map (kbd "i") #'god-local-mode)
     ;; isearch is a crucial movement primitive in emacs,
@@ -239,7 +239,7 @@ all."
                                  (god-mode-isearch-activate)))
         (isearch-backward))
     ;; next we ensure that we can get out of isearch the way we get out of everything else
-    (define-key god-mode-isearch-map (kbd "<escape>") #'escape-dwim)
+    (define-key god-mode-isearch-map (kbd "<escape>") 'prometheus--escape-dwim)
     ;; next, we extend the flexibility of traditional
     ;; non-regexp isearch so that things can be reached more
     ;; easily with it
