@@ -1,0 +1,134 @@
+* Prometheus Mode
+
+** Status: ⚠️ Under Construction ⚠️
+
+Currently, Prometheus Mode is in a highly experimental state. I'm
+regularly dogfooding it, but it still has several annoying bugs
+and kinks to work out.
+
+** Background
+
+One of the key advantages of Vim and other modal editors over
+Emacs is the fact that they have an grammar for describing text
+editing operations. This means that instead of having to have
+entirely separate individual commands (and often, associated
+keybindings) to remember for each and every combination of verb
+and object one might want -- so for instance, for /deleting/
+words, characters, sentences, and s-expressions, and for
+/selecting/ those same text objects, and then also for moving
+past them, and yanking them, etc -- because modal editors have
+the concept of a grammar for describing text edits, one can
+actually compose more fundamental building blocks /into/ the
+larger commands one wants instead. Thus in Vim, there's a verb
+for deleting, selecting, moving past, and copying, and then
+objects for referring to words, characters, sentences, etcetera,
+and you can compose just those 8 commands/key bindings into all
+the actual commands you need, instead of having to memorize 16
+separate commands. This composability, the result of having a
+language, means that instead of having to memorize (possible
+text objects)x(possible operations) commands, you instead only
+have to memorize (text objects)+(operations) commands, and every
+new text object you learn or create automatically gets the
+benefit of all existing verbs, and vice versa, meaning extending
+the text editor's range of concepts or learning new existing
+ones for yourself has a geometric instead of linear payoff rate.
+
+There have been may attempts to bring this experience to Emacs,
+including Viper mode and Evil mode for Vi and Vim emulation
+respectively, but those emulation modes suffer from the problem
+that they're essentially an implementation of a completely
+different editor in elisp -- this is fine, if you're okay with
+that, but it means that the new editor's keybindings be
+different from Emacs norms, meaning you typically have to spend
+a lot of time aligning everything else in the editor with those
+new norms, or deal with inconsistent keybindings, and even with
+something like evil-collection taking care of this for you most
+of the time, this still means you won't be able to use
+traditional emacs documentation, and you have this layer of an
+entirely different editor instead of Emacs's built in text
+editing commands and ideas, which is a problem if you actually
+/like/ those commands and ideas better.
+
+There have been a few, fairly popular, attempts to make modal
+editing grammars that integrate better with Emacs, like Meow and
+Boon, but most of these take the form of simply implementing a
+text editing grammar that uses Emacs's built in commands under
+the hood and binds a few less keys, and offer something like
+`god-mode' as a leader key, while still using command bindings
+and combinations and behaviors that don't really align with
+vanilla Emacs, meaning that the problem is reduced, but not
+eliminated.
+
+Then there's God-mode. God mode is promising, but it primarily
+acts as a sort of grammar for describing executing key chords
+without using modifier keys -- a sort of intelligent sticky
+modifier keys, offering the ergonomic benefits of modal editors,
+but not providing a true replacement for a real text editing
+grammar.
+
+** Introduction
+
+Prometheus Mode aims to solve all this.
+
+The core insight of Prometheus-Mode is that Emacs actually
+/does/ provide all the components necessary out of the box to
+construct a text editing grammar: selections and region actions!
+Think about it: the way a text editing grammar works is that
+instead of specifying a single command that bakes in both the
+region and the command to be run on the region, you specify
+/what/ you want to act on, and then /how/ to act on it
+separately. That's how regions and their associated commands in
+Emacs work already: you highlight /what/ you want to act on, and
+then say what you want to do to it! Of course, this wouldn't
+work if the commands you have to select things were too
+primitive, like in most non-modal editors, because then the
+specification of /what/ would be too low level, instead of
+specifying text objects you'd always be specifying either words
+or characters or, if you're lucky, lines. However, Emacs does in
+fact offer a rich set of text objects baked into commands for
+selecting or moving by them (as well as doing other things to
+them, but those aren't relevant right now). Now, we could use
+this as a sort of mental jujutsu practice in existing Emacs, by
+just always remembering to use selection commands and then
+region commands, or always remembering to place a mark, then use
+a movement command, then do a region command, but the second
+option is cumbersome, and the first option (using the built in
+text object selection commands) falls short of Vim's text
+editing grammar's power by not unifying motion and text object
+specification commands. Prometheus Mode's solution is to adopt
+the Kakoune-style editing approach of making motion commands
+automatically select the text object just passed over, and also
+place marks around each object as you pass it (for commands that
+take regions via marks as arguments like `transpose-regions' so
+you can use them /in place of/ more specific commands like
+`transpose-words'). Thus, you can compose Emacs's editing
+commands into a text editing grammar very easily!
+
+The downsides to this, of course, are the ones inherent to the
+Kakoune-style reversed text editing grammar model: you need to
+duplicate commands for commands that are supposed to just move
+without selecting, and those that are supposed to move and
+select, and you have to worry about entering a command
+accidentally effecting a selection left over from moving through
+a file, instead of what you actually intended to touch on the
+present line.
+
+Prometheus Mode's solution to this is twofold. First, entering
+insert mode automatically deselects what you have selected,
+unless you intentionally start a selection. Second, if you don't
+begin entering a command (it won't happen if you're in the
+middle of entering a command, don't worry) within
+1.5*`prometheus-auto-timer-time' seconds, your last selection
+will be deselected, unless you intentionally set the mark.
+
+In all other respects, Prometheus-Mode is /just Emacs/: it has
+the same selection of text objects and actions, all the
+mnemonics and keybindings are exactly the same, all the same
+commands, even outside the text editing grammar, are available
+(you can thing of the action+extent commands as simply
+shortcuts!), and all the same commands (and the same text
+editing grammar via selection behavior) is available behind
+modifier keys in insert mode for quick edits. This truly is Just
+Emacs in a way no other modal editing system has achieved yet!
+Hopefully, someone finds this useful!
+
