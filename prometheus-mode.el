@@ -31,7 +31,7 @@
 ;; warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 ;; PURPOSE. See the GNU General Public License for more
 ;; details.
-;; 
+;;
 ;; You should have received a copy of the GNU General Public
 ;; License along with this program. If not, see
 ;; <https://www.gnu.org/licenses/>.
@@ -52,13 +52,20 @@
                                                         magit-blob-mode magit-refs-mode magit-blame-mode
                                                         magit-stash-mode magit-cherry-mode magit-reflog-mode
                                                         magit-process-mode magit-section-mode magit-stash-mode
-                                                        dired-mode gnus-group-mode gnus-summary-mode dashboard-mode 
+                                                        dired-mode gnus-group-mode gnus-summary-mode dashboard-mode
                                                         enlight-mode)
     "The list of modes that auto-selection will not occur in."
     :type 'listp
     :group 'prometheus)
 (defcustom prometheus-excluded-commands '(forward-char
                                           backward-char
+                                          xref-find-apropos
+                                          xref-find-references
+                                          embark-find-definition
+                                          elisp-def
+                                          eglot-find-declaration
+                                          eglot-find-implementation
+                                          eglot-find-typeDefinition
                                           isearch-repeat-forward
                                           isearch-repeat-backward
                                           search-forward
@@ -67,11 +74,16 @@
                                           eat-self-input
                                           backward-up-list
                                           down-list
+                                          puni-up-list
                                           next-line
                                           previous-line
                                           pixel-scroll-precision
                                           pop-global-mark
                                           expreg-expand
+                                          expand-region
+                                          contract-region
+                                          puni-expand-region
+                                          puni-contract-region
                                           expreg-contract
                                           undo
                                           mark-sexp
@@ -251,21 +263,21 @@ all."
 ;;;;; God Mode Basics
     ;; Enable god mode globally
     (god-mode)
-    
+
     ;; We want an in-line visual indication of whether we're in god
     ;; mode or not
     (add-hook 'post-command-hook #'prometheus-god-mode-update-cursor-type)
-    
+
     ;; Kakoune-style prometheus--motion-selection
     (add-hook 'deactivate-mark-hook (lambda ()
                                         (setq prometheus--intentional-region-active nil)))
-    
+
     (add-hook 'post-command-hook 'prometheus--motion-selection)
 
     ;; When we're overwriting text, we want to actually be
     ;; able to edit text automatically without interference
     (add-hook 'overwrite-mode-hook #'prometheus-god-mode-toggle-on-overwrite)
-    
+
     (global-set-key (kbd "<escape>") 'prometheus--escape-dwim)
     ;; next we need to provide a way to exit god mode!
     (define-key god-local-mode-map (kbd "i") #'god-local-mode)
@@ -286,7 +298,7 @@ all."
     (require 'god-mode-isearch)
     (define-key god-mode-isearch-map (kbd "i") #'god-mode-isearch-disable)
     (define-key isearch-mode-map (kbd "<escape>") #'god-mode-isearch-activate)
-    
+
     ;; next we ensure that we can get out of isearch the way we get out of everything else
     (define-key god-mode-isearch-map (kbd "<escape>") 'prometheus--escape-dwim)
     ;; next, we extend the flexibility of traditional
