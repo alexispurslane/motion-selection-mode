@@ -2,7 +2,7 @@
 
 ;; Author: Alexis Purslane <alexispurslane@pm.me>
 ;; URL: https://github.com/alexispurslane/prometheus-mode
-;; Package-Requires: ((emacs "24.4") (god-mode))
+;; Package-Requires: ((emacs "29.3") (god-mode))
 ;; Version: 0.1
 ;; Keywords: tools
 
@@ -93,6 +93,7 @@ want to actually manipulation should select things."
     :group 'prometheus)
 (defcustom prometheus-auto-timer-time 0.6
     "The amount of idle time to wait until doing something.
+
 Influences several things, including several `prometheus-mode'
 features, including `isearch-forward-auto-timer' and backward
 timer, auto-deselection, etc."
@@ -117,13 +118,24 @@ timer, auto-deselection, etc."
 ;; now proceed through the search results; we can always
 ;; hit i again to change it
 (defun prometheus-isearch-forward-auto-timer ()
+    "Runs isearch and activates god mode after a pause in typing.
+
+This allows you to use isearch more efficiently and effectively
+for avy-timer-like navigation without having to reach for the
+control keys. It feels almost telepathic to me."
     (interactive)
     (run-with-idle-timer prometheus-auto-timer-time nil
                          (lambda ()
                              (message "Search finished, activating god search mode")
                              (god-mode-isearch-activate)))
     (isearch-forward))
+
 (defun prometheus-isearch-backward-auto-timer ()
+    "Runs isearch and activates god mode after a pause in typing.
+
+This allows you to use isearch more efficiently and effectively
+for avy-timer-like navigation without having to reach for the
+control keys. It feels almost telepathic to me."
     (interactive)
     (run-with-idle-timer prometheus-auto-timer-time nil
                          (lambda ()
@@ -132,12 +144,8 @@ timer, auto-deselection, etc."
     (isearch-backward))
 
 (defun prometheus--deselect ()
-    ;; if after the designated time has elapsed, the user
-    ;; hasn't run any commands, and doesn't seem to be in
-    ;; the process of running any commands, in what was
-    ;; just selected, automatically deselect it; it's
-    ;; likely that was just a trailing selection as a
-    ;; result of moving through the buffer!
+    "Deselect the current selection if the user does not appear to be
+in the process of running a command on it."
     (when (and god-local-mode
                ;; if the minibuffer is open and focused,
                ;; then the user is probably in the middle
@@ -174,6 +182,16 @@ timer, auto-deselection, etc."
         (setq-local prometheus--last-point-position (point))))
 
 (defun prometheus--motion-selection ()
+    "Meant to be run in `post-command-hook'.
+
+If the last command moved the point, and the user has not
+intentionally set down a mark themself, and we are not in one of
+the excluded modes, and the command was not one of the excluded
+commands, put the mark where the point was before this command
+ran, so that we effectively select the text objects the user
+moves over, and start an idle timer to automatically deselect the
+selection we made if the user doesn't appear to want to run any
+commands on this selection."
     (cond
      ((eq this-command 'set-mark-command)
       (setq prometheus--intentional-region-active t))
@@ -199,10 +217,6 @@ timer, auto-deselection, etc."
           (push-mark prometheus--last-point-position nil t))))
     (setq-local prometheus--last-point-position (point)))
 
-;; Extend quake's version of `escape-dwim' to cancel god
-;; mode just like it does evil mode, and quit
-;; autocompletion as well since that's something it
-;; doesn't take care of unlike evil mode's equivalent
 (defun prometheus--escape-dwim ()
     "Kill, exit, escape, stop, everything, now, and put me back in the
 current buffer in God Mode."
@@ -255,6 +269,10 @@ all."
     (global-set-key (kbd "<escape>") 'prometheus--escape-dwim)
     ;; next we need to provide a way to exit god mode!
     (define-key god-local-mode-map (kbd "i") #'god-local-mode)
+    (define-key god-local-mode-map (kbd "I") (lambda ()
+                                                 (interactive)
+                                                 (deactivate-mark)
+                                                 (god-local-mode -1)))
     ;; isearch is a crucial movement primitive in emacs,
     ;; equivalent to `f' as well as `/' in evil, and possibly
     ;; even superior to avy as well
