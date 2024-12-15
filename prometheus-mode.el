@@ -57,6 +57,40 @@
     "The list of modes that auto-selection will not occur in."
     :type 'listp
     :group 'prometheus)
+(defcustom prometheus-excluded-commands '(forward-char
+                                          backward-char
+                                          isearch-repeat-forward
+                                          isearch-repeat-backward
+                                          search-forward
+                                          search-backward
+                                          self-insert-command
+                                          eat-self-input
+                                          backward-up-list
+                                          down-list
+                                          next-line
+                                          previous-line
+                                          pixel-scroll-precision
+                                          pop-global-mark
+                                          expreg-expand
+                                          expreg-contract
+                                          undo
+                                          mark-sexp
+                                          mark-defun
+                                          mark-word
+                                          mark-paragraph
+                                          mark-page
+                                          mark-end-of-sentence)
+    "The list of commands that should not trigger automatic selection.
+
+There's that much of a perfect pattern to which things belong
+here and which don't, it's just about what seems
+intuitive/useful. Generally, commands that you generally use just
+to move around a buffer, or which simply accidentally move you
+around a buffer as a side effect, shouldn't select things, but
+commands that correspond more directly to text objects you might
+want to actually manipulation should select things."
+    :type 'listp
+    :group 'prometheus)
 (defcustom prometheus-auto-timer-time 0.6
     "The amount of idle time to wait until doing something.
 Influences several things, including several `prometheus-mode'
@@ -146,22 +180,7 @@ timer, auto-deselection, etc."
      ((and prometheus--last-point-position
            (not prometheus--intentional-region-active)
            (> (abs (- prometheus--last-point-position (point))) 1)
-           (not (memq this-command '(forward-char
-                                     backward-char
-                                     isearch-repeat-forward
-                                     isearch-repeat-backward
-                                     search-forward
-                                     search-backward
-                                     self-insert-command
-                                     eat-self-input
-                                     next-line
-                                     previous-line
-                                     pixel-scroll-precision
-                                     pop-global-mark
-                                     expreg-expand
-                                     expreg-contract
-                                     undo
-                                     )))
+           (not (memq this-command prometheus-excluded-commands))
            (not (memq major-mode prometheus-excluded-major-modes))
            (not (and (boundp 'rectangle-mark-mode) rectangle-mark-mode))
            (not isearch-mode))
@@ -189,8 +208,8 @@ timer, auto-deselection, etc."
 current buffer in God Mode."
     (interactive)
     (message "Escape")
+    (when completion-in-region-mode       (corfu-quit))
     (cond ((region-active-p)              (deactivate-mark))
-          (completion-in-region-mode      (corfu-quit))
           ((not god-local-mode)           (god-local-mode 1))
           (isearch-mode                   (isearch-exit))
           (overwrite-mode                 (overwrite-mode -1))
