@@ -2,7 +2,7 @@
 
 ;; Author: Alexis Purslane <alexispurslane@pm.me>
 ;; URL: https://github.com/alexispurslane/prometheus-mode
-;; Package-Requires: ((emacs "24.4") (god-mode) (whole-line-or-region))
+;; Package-Requires: ((emacs "24.4") (god-mode))
 ;; Version: 0.1
 ;; Keywords: tools
 
@@ -47,7 +47,13 @@
     "Customization group for `prometheus-mode'."
     :group 'editing
     :group 'god)
-(defcustom prometheus-excluded-major-modes '(magit-mode dired-mode gnus-group-mode gnus-summary-mode)
+(defcustom prometheus-excluded-major-modes '(magit-mode Info-mode
+                                                        magit-log-mode magit-diff-mode magit-status-mode magit-wip-mode
+                                                        magit-blob-mode magit-refs-mode magit-blame-mode
+                                                        magit-stash-mode magit-cherry-mode magit-reflog-mode
+                                                        magit-process-mode magit-section-mode magit-stash-mode
+                                                        dired-mode gnus-group-mode gnus-summary-mode dashboard-mode 
+                                                        enlight-mode)
     "The list of modes that auto-selection will not occur in."
     :type 'listp
     :group 'prometheus)
@@ -142,6 +148,10 @@ timer, auto-deselection, etc."
            (> (abs (- prometheus--last-point-position (point))) 1)
            (not (memq this-command '(forward-char
                                      backward-char
+                                     isearch-repeat-forward
+                                     isearch-repeat-backward
+                                     search-forward
+                                     search-backward
                                      self-insert-command
                                      eat-self-input
                                      next-line
@@ -150,7 +160,8 @@ timer, auto-deselection, etc."
                                      pop-global-mark
                                      expreg-expand
                                      expreg-contract
-                                     undo)))
+                                     undo
+                                     )))
            (not (memq major-mode prometheus-excluded-major-modes))
            (not (and (boundp 'rectangle-mark-mode) rectangle-mark-mode))
            (not isearch-mode))
@@ -178,18 +189,16 @@ timer, auto-deselection, etc."
 current buffer in God Mode."
     (interactive)
     (message "Escape")
-    (cond (completion-in-region-mode (corfu-quit))
-          ((not god-local-mode)
-           (god-local-mode 1))
+    (cond ((region-active-p)              (deactivate-mark))
+          (completion-in-region-mode      (corfu-quit))
+          ((not god-local-mode)           (god-local-mode 1))
           (isearch-mode                   (isearch-exit))
           (overwrite-mode                 (overwrite-mode -1))
           ((eq last-command 'mode-exited) nil)
           ((> (minibuffer-depth) 0)       (abort-recursive-edit))
-          ((region-active-p)              (deactivate-mark))
           (current-prefix-arg             nil)
           ((> (recursion-depth) 0)        (exit-recursive-edit))
           (buffer-quit-function           (funcall buffer-quit-function))
-          ((not (one-window-p t))         (delete-window))
           ((string-match "^ \\*" (buffer-name (current-buffer)))
            (bury-buffer))))
 
@@ -260,14 +269,19 @@ all."
     ;; object commands, equivalent to vim probably, or
     ;; roughly thereto, but many of them don't have
     ;; bindings. Let's fix that
-    (define-key global-map (kbd "RET") (lambda () (interactive) (electric-newline-and-maybe-indent) (god-local-mode -1)))
-    (define-key global-map (kbd "<backspace>") (lambda () (interactive) (delete-char -1) (god-local-mode -1)))
+    (define-key global-map (kbd "RET") (lambda () (interactive) (god-local-mode -1) (newline-and-indent)))
     (define-key global-map (kbd "C-r") #'prometheus-isearch-backward-auto-timer)
     (define-key global-map (kbd "C-s") #'prometheus-isearch-forward-auto-timer)
+    ;; Don't pass backspace through to the buffer directly,
+    ;; because we want to be able to more easily delete lines
+    ;; with S-<backspace>, and we want to ensure properly
+    ;; consistent behavior between backspace and shift backspace
+    (define-key god-local-mode-map (kbd "<backspace>") (lambda (prefix) (interactive "p") (delete-char (- prefix)) (god-local-mode -1)))
+    (define-key god-local-mode-map (kbd "S-<backspace>") (lambda (prefix) (interactive "p") (kill-whole-line prefix)))
     ;; being able to apply a region command to a whole line by
     ;; default saves us from learning more commands, and saves
     ;; keystrokes
-    (whole-line-or-region-global-mode))
+    (repeat-mode 1))
 
 (provide 'prometheus-mode)
 
