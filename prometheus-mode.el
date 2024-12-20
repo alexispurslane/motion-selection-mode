@@ -47,7 +47,7 @@
     "Customization group for `prometheus-mode'."
     :group 'editing
     :group 'god)
-(defcustom prometheus-excluded-major-modes '()
+(defcustom prometheus-excluded-major-modes '(dired-mode)
     "The list of modes that auto-selection will not occur in."
     :type 'listp
     :group 'prometheus)
@@ -188,6 +188,14 @@ in the process of running a command on it."
         (pop-mark)
         (setq-local prometheus--last-point-position (point))))
 
+(defun prometheus--get-parent (mode)
+    "Get the ultimate `derived-mode-parent' of MODE."
+    ;; this could easily be recursive but elisp doesn't have TCO
+    (let ((last-mode nil))
+        (while mode
+            (setq last-mode mode)
+            (setq mode (get mode 'derived-mode-parent)))
+        last-mode))
 (defun prometheus--motion-selection ()
     "Meant to be run in `post-command-hook'.
 
@@ -209,7 +217,7 @@ commands on this selection."
            (not (memq major-mode prometheus-excluded-major-modes))
            (not (and (boundp 'rectangle-mark-mode) rectangle-mark-mode))
            (not isearch-mode)
-           (or (not (eq (get major-mode 'derived-mode-parent) 'special-mode))
+           (or (not (eq (prometheus--get-parent major-mode) 'special-mode))
                (not buffer-read-only)))
       (message "dropping mark")
       (let ((inhibit-message t))
