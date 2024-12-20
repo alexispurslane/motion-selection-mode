@@ -47,13 +47,7 @@
     "Customization group for `prometheus-mode'."
     :group 'editing
     :group 'god)
-(defcustom prometheus-excluded-major-modes '(magit-mode Info-mode
-                                                        magit-log-mode magit-diff-mode magit-status-mode magit-wip-mode
-                                                        magit-blob-mode magit-refs-mode magit-blame-mode
-                                                        magit-stash-mode magit-cherry-mode magit-reflog-mode
-                                                        magit-process-mode magit-section-mode magit-stash-mode
-                                                        dired-mode gnus-group-mode gnus-summary-mode dashboard-mode
-                                                        enlight-mode)
+(defcustom prometheus-excluded-major-modes '()
     "The list of modes that auto-selection will not occur in."
     :type 'listp
     :group 'prometheus)
@@ -91,7 +85,8 @@
                                           mark-word
                                           mark-paragraph
                                           mark-page
-                                          mark-end-of-sentence)
+                                          mark-end-of-sentence
+                                          eshell-self-insert-command)
     "The list of commands that should not trigger automatic selection.
 
 There's that much of a perfect pattern to which things belong
@@ -213,11 +208,13 @@ commands on this selection."
            (not (memq this-command prometheus-excluded-commands))
            (not (memq major-mode prometheus-excluded-major-modes))
            (not (and (boundp 'rectangle-mark-mode) rectangle-mark-mode))
-           (not isearch-mode))
+           (not isearch-mode)
+           (or (not (eq (get major-mode 'derived-mode-parent) 'special-mode))
+               (not buffer-read-only)))
       (message "dropping mark")
       (let ((inhibit-message t))
           (run-with-idle-timer
-           (* 1.5 prometheus-auto-timer-time) nil
+           (* 1.2 prometheus-auto-timer-time) nil
            #'prometheus--deselect)
           ;; we set two marks here so that if there are
           ;; commands that take multiple regions, this will
@@ -235,10 +232,10 @@ current buffer in God Mode."
     (interactive)
     (message "Escape")
     (when completion-in-region-mode       (corfu-quit))
+    (when overwrite-mode                  (overwrite-mode -1))
     (cond ((region-active-p)              (deactivate-mark))
           ((not god-local-mode)           (god-local-mode 1))
           (isearch-mode                   (isearch-exit))
-          (overwrite-mode                 (overwrite-mode -1))
           ((eq last-command 'mode-exited) nil)
           ((> (minibuffer-depth) 0)       (abort-recursive-edit))
           (current-prefix-arg             nil)
@@ -330,7 +327,8 @@ all."
     ;; being able to apply a region command to a whole line by
     ;; default saves us from learning more commands, and saves
     ;; keystrokes
-    (repeat-mode 1))
+    (when (not repeat-mode)
+        (repeat-mode 1)))
 
 (provide 'prometheus-mode)
 
