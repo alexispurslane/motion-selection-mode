@@ -39,8 +39,7 @@
 ;;; Code:
 (require 'god-mode)
 
-(defvar prometheus--last-point-position nil)
-(make-variable-buffer-local 'prometheus--last-point-position)
+(defvar-local prometheus--last-point-position nil)
 (defvar prometheus--intentional-region-active nil)
 (defvar prometheus--god-command-in-progress nil)
 (defgroup prometheus nil
@@ -124,35 +123,25 @@ timer, auto-deselection, etc."
 ;; half a second, assume we're done searching and want to
 ;; now proceed through the search results; we can always
 ;; hit i again to change it
-(defun prometheus-isearch-forward-auto-timer ()
+(defun prometheus-isearch-auto-timer (fun)
     "Runs isearch and activates god mode after a pause in typing.
 
 This allows you to use isearch more efficiently and effectively
 for avy-timer-like navigation without having to reach for the
 control keys. It feels almost telepathic to me."
-    (interactive)
-    (run-with-idle-timer prometheus-auto-timer-time nil
-                         (lambda ()
-                             (message "Search finished, activating god search mode")
-                             (god-mode-isearch-activate)))
-    (isearch-forward))
-
-(defun prometheus-isearch-backward-auto-timer ()
-    "Runs isearch and activates god mode after a pause in typing.
-
-This allows you to use isearch more efficiently and effectively
-for avy-timer-like navigation without having to reach for the
-control keys. It feels almost telepathic to me."
-    (interactive)
-    (run-with-idle-timer prometheus-auto-timer-time nil
-                         (lambda ()
-                             (message "Search finished, activating god search mode")
-                             (god-mode-isearch-activate)))
-    (isearch-backward))
+    (lambda ()
+        (interactive)
+        (run-with-idle-timer prometheus-auto-timer-time nil
+                             (lambda ()
+                                 (message "Search finished, activating god search mode")
+                                 (when isearch-mode
+                                     (god-mode-isearch-activate))))
+        (funcall fun)))
 
 (defun prometheus--deselect ()
     "Deselect the current selection if the user does not appear to be
 in the process of running a command on it."
+    (interactive)
     (when (and god-local-mode
                ;; if the minibuffer is open and focused,
                ;; then the user is probably in the middle
@@ -186,7 +175,7 @@ in the process of running a command on it."
                    (length= this-command-keys 0)))
         ;; deselect the current region and update the internal selection variables
         (pop-mark)
-        (setq-local prometheus--last-point-position (point))))
+        (setq prometheus--last-point-position (point))))
 
 (defun prometheus--get-parent (mode)
     "Get the ultimate `derived-mode-parent' of MODE."
@@ -222,8 +211,8 @@ commands on this selection."
       (message "dropping mark")
       (let ((inhibit-message t))
           (run-with-idle-timer
-           (* 1.2 prometheus-auto-timer-time) nil
-           #'prometheus--deselect)
+           prometheus-auto-timer-time nil
+           (lambda () (call-interactively 'prometheus--deselect t)))
           ;; we set two marks here so that if there are
           ;; commands that take multiple regions, this will
           ;; count as the end of the previous region and the
@@ -232,7 +221,7 @@ commands on this selection."
           ;; arguments to a command automatically.
           (push-mark prometheus--last-point-position)
           (push-mark prometheus--last-point-position nil t))))
-    (setq-local prometheus--last-point-position (point)))
+    (setq prometheus--last-point-position (point)))
 
 (defun prometheus--escape-dwim ()
     "Kill, exit, escape, stop, everything, now, and put me back in the
@@ -242,7 +231,7 @@ current buffer in God Mode."
     (when completion-in-region-mode       (corfu-quit))
     (when overwrite-mode                  (overwrite-mode -1))
     (cond ((region-active-p)              (deactivate-mark))
-          ((not god-local-mode)           (god-local-mode 1))
+          ((not god-local-mode)           (god-mode-all 1))
           (isearch-mode                   (isearch-exit))
           ((eq last-command 'mode-exited) nil)
           ((> (minibuffer-depth) 0)       (abort-recursive-edit))
@@ -251,6 +240,16 @@ current buffer in God Mode."
           (buffer-quit-function           (funcall buffer-quit-function))
           ((string-match "^ \\*" (buffer-name (current-buffer)))
            (bury-buffer))))
+
+(defun prometheus-single-shot-char (char)
+    "Reads a single CHAR from the minibuffer and executes it in the current
+buffer exactly as if you'd typed it with god mode off, including running
+any commands it may have triggered. Useful with, e.g.,
+`org-use-speed-commands'."
+    (interactive (list (read-char-from-minibuffer "Perform char: ")))
+    (god-local-mode -1)
+    (execute-kbd-macro (vector char))
+    (god-local-mode 1))
 
 ;;;###autoload
 (define-minor-mode prometheus-mode
@@ -266,6 +265,8 @@ all."
     :lighter " Prometheus"
     :group 'prometheus
 ;;;;; God Mode Basics
+    (setq god-exempt-major-modes nil)
+    (setq god-exempt-predicates nil)
     ;; Enable god mode globally
     (god-mode)
 
@@ -284,12 +285,14 @@ all."
     (add-hook 'overwrite-mode-hook #'prometheus-god-mode-toggle-on-overwrite)
 
     (global-set-key (kbd "<escape>") 'prometheus--escape-dwim)
-    ;; next we need to provide a way to exit god mode!
-    (define-key god-local-mode-map (kbd "i") #'god-local-mode)
+    ;; next we need to provide a way to exit god mode! We use
+    ;; god-mode-all with exemption off to make it easier to keep
+    ;; track of when it's on and off.
+    (define-key god-local-mode-map (kbd "i") #'god-mode-all)
     (define-key god-local-mode-map (kbd "I") (lambda ()
                                                  (interactive)
                                                  (deactivate-mark)
-                                                 (god-local-mode -1)))
+                                                 (god-mode-all -1)))
     ;; isearch is a crucial movement primitive in emacs,
     ;; equivalent to `f' as well as `/' in evil, and possibly
     ;; even superior to avy as well
@@ -303,6 +306,7 @@ all."
     (require 'god-mode-isearch)
     (define-key god-mode-isearch-map (kbd "i") #'god-mode-isearch-disable)
     (define-key isearch-mode-map (kbd "<escape>") #'god-mode-isearch-activate)
+    (add-hook 'isearch-mode-hook #'god-mode-isearch-disable)
 
     ;; next we ensure that we can get out of isearch the way we get out of everything else
     (define-key god-mode-isearch-map (kbd "<escape>") 'prometheus--escape-dwim)
@@ -323,18 +327,12 @@ all."
     ;; object commands, equivalent to vim probably, or
     ;; roughly thereto, but many of them don't have
     ;; bindings. Let's fix that
-    (define-key global-map (kbd "RET") (lambda () (interactive) (god-local-mode -1) (newline-and-indent)))
-    (define-key global-map (kbd "C-r") #'prometheus-isearch-backward-auto-timer)
-    (define-key global-map (kbd "C-s") #'prometheus-isearch-forward-auto-timer)
-    ;; Don't pass backspace through to the buffer directly,
-    ;; because we want to be able to more easily delete lines
-    ;; with S-<backspace>, and we want to ensure properly
-    ;; consistent behavior between backspace and shift backspace
-    (define-key god-local-mode-map (kbd "<backspace>") (lambda (prefix) (interactive "p") (delete-char (- prefix)) (god-local-mode -1)))
-    (define-key god-local-mode-map (kbd "S-<backspace>") (lambda (prefix) (interactive "p") (kill-whole-line prefix)))
-    ;; being able to apply a region command to a whole line by
-    ;; default saves us from learning more commands, and saves
-    ;; keystrokes
+    (define-key global-map (kbd "C-r") (prometheus-isearch-auto-timer #'isearch-backward))
+    (define-key global-map (kbd "C-s") (prometheus-isearch-auto-timer #'isearch-forward))
+    (define-key global-map (kbd "C-S-Q") 'prometheus-single-shot-char)
+    (advice-add 'org-speed-move-safe :before (defun prometheus--org-speed-move-safe (&rest r) "Don't select anything when we're moving using org speed mode" (prometheus-mode -1)))
+    (advice-add 'org-speed-move-safe :after (defun prometheus--org-speed-move-safe-undo (&rest r) "Turn selection on after." (prometheus-mode 1)))
+
     (when (not repeat-mode)
         (repeat-mode 1)))
 
