@@ -142,37 +142,38 @@ control keys. It feels almost telepathic to me."
     "Deselect the current selection if the user does not appear to be
 in the process of running a command on it."
     (interactive)
-    (when (and god-local-mode
-               ;; if the minibuffer is open and focused,
-               ;; then the user is probably in the middle
-               ;; of running a command by name on the
-               ;; current selection, so don't deselect
-               (not (minibuffer-window-active-p (selected-window)))
-               ;; if the which key buffer is open the user
-               ;; is probably trying to figure out what to
-               ;; do/enter, so don't deselect what they
-               ;; selected yet
-               (not (and (boundp 'which-key--buffer)
-                         (get-buffer-window which-key--buffer)))
-               ;; if god-mode-self-insert is running right
-               ;; now, that means the user is in the middle
-               ;; of entering a god mode command on this
-               ;; region; don't deselect
-               (not (and (bound-and-true-p god-local-mode)
-                         (eq this-command 'god-mode-self-insert)))
-               ;; copied from which-key's code to detect
-               ;; the current prefix key if the user has
-               ;; entered one or more prefix keys they're
-               ;; in the middle of executing a non-god-mode
-               ;; command on the region, also don't
-               ;; deselect
-               (let ((this-command-keys (this-single-command-keys)))
-                   (when (and (vectorp this-command-keys)
-                              (> (length this-command-keys) 0)
-                              (eq (aref this-command-keys 0) 'key-chord)
-                              (bound-and-true-p key-chord-mode))
-                       (setq this-command-keys (this-single-command-raw-keys)))
-                   (length= this-command-keys 0)))
+    (when (or (called-interactively-p)
+              (and god-local-mode
+                   ;; if the minibuffer is open and focused,
+                   ;; then the user is probably in the middle
+                   ;; of running a command by name on the
+                   ;; current selection, so don't deselect
+                   (not (minibuffer-window-active-p (selected-window)))
+                   ;; if the which key buffer is open the user
+                   ;; is probably trying to figure out what to
+                   ;; do/enter, so don't deselect what they
+                   ;; selected yet
+                   (not (and (boundp 'which-key--buffer)
+                             (get-buffer-window which-key--buffer)))
+                   ;; if god-mode-self-insert is running right
+                   ;; now, that means the user is in the middle
+                   ;; of entering a god mode command on this
+                   ;; region; don't deselect
+                   (not (and (bound-and-true-p god-local-mode)
+                             (eq this-command 'god-mode-self-insert)))
+                   ;; copied from which-key's code to detect
+                   ;; the current prefix key if the user has
+                   ;; entered one or more prefix keys they're
+                   ;; in the middle of executing a non-god-mode
+                   ;; command on the region, also don't
+                   ;; deselect
+                   (let ((this-command-keys (this-single-command-keys)))
+                       (when (and (vectorp this-command-keys)
+                                  (> (length this-command-keys) 0)
+                                  (eq (aref this-command-keys 0) 'key-chord)
+                                  (bound-and-true-p key-chord-mode))
+                           (setq this-command-keys (this-single-command-raw-keys)))
+                       (length= this-command-keys 0))))
         ;; deselect the current region and update the internal selection variables
         (pop-mark)
         (setq prometheus--last-point-position (point))))
@@ -208,11 +209,15 @@ commands on this selection."
            (not isearch-mode)
            (or (not (eq (prometheus--get-parent major-mode) 'special-mode))
                (not buffer-read-only)))
-      (message "dropping mark")
       (let ((inhibit-message t))
-          (run-with-idle-timer
-           prometheus-auto-timer-time nil
-           (lambda () (call-interactively 'prometheus--deselect t)))
+          (unless executing-kbd-macro
+              (run-with-idle-timer
+               prometheus-auto-timer-time nil
+               (lambda ()
+                   (if defining-kbd-macro
+                           ;; FIXME [#A]: Do something so that this timer being run is recorded by the kmacro in progress
+                           (setq unread-command-events (listify-key-sequence (kbd "C-S-D")))
+                       (prometheus--deselect)))))
           ;; we set two marks here so that if there are
           ;; commands that take multiple regions, this will
           ;; count as the end of the previous region and the
@@ -227,7 +232,6 @@ commands on this selection."
     "Kill, exit, escape, stop, everything, now, and put me back in the
 current buffer in God Mode."
     (interactive)
-    (message "Escape")
     (when completion-in-region-mode       (corfu-quit))
     (when overwrite-mode                  (overwrite-mode -1))
     (cond ((region-active-p)              (deactivate-mark))
@@ -330,6 +334,7 @@ all."
     (define-key global-map (kbd "C-r") (prometheus-isearch-auto-timer #'isearch-backward))
     (define-key global-map (kbd "C-s") (prometheus-isearch-auto-timer #'isearch-forward))
     (define-key global-map (kbd "C-S-Q") 'prometheus-single-shot-char)
+    (define-key global-map (kbd "C-S-D") 'prometheus--deselect)
     (advice-add 'org-speed-move-safe :before (defun prometheus--org-speed-move-safe (&rest r) "Don't select anything when we're moving using org speed mode" (prometheus-mode -1)))
     (advice-add 'org-speed-move-safe :after (defun prometheus--org-speed-move-safe-undo (&rest r) "Turn selection on after." (prometheus-mode 1)))
 
