@@ -1,4 +1,4 @@
-* Prometheus Mode: A Vanilla-Emacs-First Text Editing Grammar Minor Mode
+* motion-selection-mode: A vanilla-Emacs text editing grammar minor mode
 :PROPERTIES:
 :ID:       918dbc37-43c6-40f1-b1d8-3dc8e704e858
 :END:
@@ -10,7 +10,7 @@
 :ID:       458a92d8-3aa7-404e-9afd-1f329bf9c7d3
 :END:
 
-Prometheus mode introduces a truly vanilla-Emacs friendly text
+=motion-selection-mode= introduces a truly vanilla-Emacs friendly text
 editing grammar. Key features:
 
 1. works with modifier keys or using modal editing via god mode;
@@ -24,11 +24,11 @@ editing grammar. Key features:
 :ID:       616554d7-e8e0-43da-bfa2-29c08dbcac0d
 :END:
 
-I'm planning to get this package into MELPA soon. In the meantime, just download =prometheus-mode.el= and put it in your load path, then use:
+I'm planning to get this package into MELPA soon. In the meantime, just download =motion-selection-mode.el= and put it in your load path, then use:
 
 #+begin_src emacs-lisp
-  (require 'prometheus-mode)
-  (prometheus-mode 1)
+  (require 'motion-selection-mode)
+  (motion-selection-mode 1)
 #+end_src
 
 ** Explanation
@@ -36,7 +36,7 @@ I'm planning to get this package into MELPA soon. In the meantime, just download
 :ID:       8d4c73a5-2206-46ed-b241-4175f7689877
 :END:
 
-The core insight of Prometheus-Mode is that Emacs actually
+The core insight of =motion-selection-mode= is that Emacs actually
 does provide all the components necessary out of the box to
 construct a text editing grammar: selections and region actions!
 
@@ -58,13 +58,13 @@ them, but those aren't relevant right now).
 
 Now, we could use this as a sort of mental jujutsu practice in
 existing Emacs, by just always remembering to use selection
-commands and then region commands, or always remembering to place a mark, then use a movement command, then do a region command, but the second option is cumbersome, and the first option (using the built in text object selection commands) falls short of Vim's text editing grammar's power by not unifying motion and text object specification commands. Prometheus Mode's solution is to adopt the Kakoune-style editing approach of making motion commands automatically select the text object just passed over, and also place marks around each object as you pass it (for commands that take regions via marks as arguments like `transpose-regions' so you can use them /in place of/ more specific commands like `transpose-words'). Thus, you can compose Emacs's editing commands into a text editing grammar very easily!
+commands and then region commands, or always remembering to place a mark, then use a movement command, then do a region command, but the second option is cumbersome, and the first option (using the built in text object selection commands) falls short of Vim's text editing grammar's power by not unifying motion and text object specification commands. Motion-Selection Mode's solution is to adopt the Kakoune-style editing approach of making motion commands automatically select the text object just passed over, and also place marks around each object as you pass it (for commands that take regions via marks as arguments like `transpose-regions' so you can use them /in place of/ more specific commands like `transpose-words'). Thus, you can compose Emacs's editing commands into a text editing grammar very easily!
 
-The downsides to this, of course, are the ones inherent to the Kakoune-style reversed text editing grammar model: you need to duplicate commands for commands that are supposed to just move without selecting, and those that are supposed to move and select, and you have to worry about entering a command accidentally effecting a selection left over from moving through a file, instead of what you actually intended to touch on the present line. Prometheus Mode's solution to this is twofold.
+The downsides to this, of course, are the ones inherent to the Kakoune-style reversed text editing grammar model: you need to duplicate commands for commands that are supposed to just move without selecting, and those that are supposed to move and select, and you have to worry about entering a command accidentally effecting a selection left over from moving through a file, instead of what you actually intended to touch on the present line. Motion-Selection Mode's solution to this is twofold.
 
-First, entering insert mode automatically deselects what you have selected, unless you intentionally start a selection. Second, if you don't begin entering a command (it won't happen if you're in the middle of entering a command, don't worry) within 1.5*`prometheus-auto-timer-time' seconds, your last selection will be deselected, unless you intentionally set the mark.
+First, entering insert mode automatically deselects what you have selected, unless you intentionally start a selection. Second, if you don't begin entering a command (it won't happen if you're in the middle of entering a command, don't worry) within 1.5*`motion-selection-auto-timer-time' seconds, your last selection will be deselected, unless you intentionally set the mark.
 
-In all other respects, Prometheus-Mode is /just Emacs/: it has the same selection of text objects and actions, all the mnemonics and keybindings are exactly the same, all the same commands, even outside the text editing grammar, are available (you can thing of the action+extent commands as simply shortcuts!), and all the same commands (and the same text editing grammar via selection behavior) is available behind modifier keys in insert mode for quick edits. This truly is Just Emacs in a way no other modal editing system has achieved yet!
+In all other respects, =motion-selection-mode= is /just Emacs/: it has the same selection of text objects and actions, all the mnemonics and keybindings are exactly the same, all the same commands, even outside the text editing grammar, are available (you can thing of the action+extent commands as simply shortcuts!), and all the same commands (and the same text editing grammar via selection behavior) is available behind modifier keys in insert mode for quick edits. This truly is Just Emacs in a way no other modal editing system has achieved yet!
 
 ** Background
 :PROPERTIES:
