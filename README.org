@@ -3,6 +3,8 @@
 :ID:       918dbc37-43c6-40f1-b1d8-3dc8e704e858
 :END:
 
+[[https://github.com/alexispurslane/prometheus-mode/actions/workflows/melpa.yaml/badge.svg]]
+
 ** Overview
 :PROPERTIES:
 :ID:       458a92d8-3aa7-404e-9afd-1f329bf9c7d3
