@@ -62,6 +62,8 @@
                                           isearch-repeat-forward
                                           isearch-repeat-backward
                                           search-forward
+                                          next-error
+                                          previous-error
                                           search-backward
                                           self-insert-command
                                           eat-self-input
@@ -142,7 +144,7 @@ control keys. It feels almost telepathic to me."
     "Deselect the current selection if the user does not appear to be
 in the process of running a command on it."
     (interactive)
-    (when (or (called-interactively-p)
+    (when (or executing-kbd-macro
               (and god-local-mode
                    ;; if the minibuffer is open and focused,
                    ;; then the user is probably in the middle
