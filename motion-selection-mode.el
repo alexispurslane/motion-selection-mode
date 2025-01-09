@@ -2,7 +2,7 @@
 
 ;; Author: Alexis Purslane <alexispurslane@pm.me>
 ;; URL: https://github.com/alexispurslane/motion-selection-mode
-;; Package-Requires: ((emacs "29.3") (god-mode))
+;; Package-Requires: ((emacs "29.3") (god-mode "2.18.0"))
 ;; Version: 0.1
 ;; Keywords: tools
 
@@ -38,6 +38,7 @@
 
 ;;; Code:
 (require 'god-mode)
+(require 'god-mode-isearch)
 
 (defvar-local motion-selection--last-point-position nil)
 (defvar motion-selection--intentional-region-active nil)
@@ -108,15 +109,8 @@ timer, auto-deselection, etc."
     :type 'numberp
     :group 'motion-selection)
 
-(defun motion-selection-god-mode-update-cursor-type ()
-    (setq cursor-type
-          (cond
-           ((or god-local-mode buffer-read-only) 'box)
-           (overwrite-mode 'hollow)
-           (t 'bar))))
-
 (defun motion-selection-god-mode-toggle-on-overwrite ()
-    "Toggle god-mode on overwrite-mode."
+    "Toggle `god-mode' on `overwrite-mode'."
     (if (bound-and-true-p overwrite-mode)
             (god-local-mode-pause)
         (god-local-mode-resume)))
@@ -126,7 +120,7 @@ timer, auto-deselection, etc."
 ;; now proceed through the search results; we can always
 ;; hit i again to change it
 (defun motion-selection-isearch-auto-timer (fun)
-    "Runs isearch and activates god mode after a pause in typing.
+    "Run isearch function FUN and activates god mode after a pause in typing.
 
 This allows you to use isearch more efficiently and effectively
 for avy-timer-like navigation without having to reach for the
@@ -141,8 +135,7 @@ control keys. It feels almost telepathic to me."
         (funcall fun)))
 
 (defun motion-selection--deselect ()
-    "Deselect the current selection if the user does not appear to be
-in the process of running a command on it."
+    "Deselect the current selection if the user does not appear to be in the process of running a command on it."
     (interactive)
     (when (or executing-kbd-macro
               (and god-local-mode
@@ -231,11 +224,14 @@ commands on this selection."
     (setq motion-selection--last-point-position (point)))
 
 (defun motion-selection--escape-dwim ()
-    "Kill, exit, escape, stop, everything, now, and put me back in the
-current buffer in God Mode."
+    "Intuitive escape behavior.
+
+Kills, exits, or escapes literally everything with successive
+repetitions, to eventually put you back in `god-mode'.
+Unconditionally ends autocompletion and `overwrite-mode'."
     (interactive)
-    (when completion-in-region-mode       (corfu-quit))
-    (when overwrite-mode                  (overwrite-mode -1))
+    (when (and (fboundp 'corfu-quit) completion-in-region-mode) (corfu-quit))
+    (when overwrite-mode                                        (overwrite-mode -1))
     (cond ((region-active-p)              (deactivate-mark))
           ((not god-local-mode)           (god-mode-all 1))
           (isearch-mode                   (isearch-exit))
@@ -248,10 +244,11 @@ current buffer in God Mode."
            (bury-buffer))))
 
 (defun motion-selection-single-shot-char (char)
-    "Reads a single CHAR from the minibuffer and executes it in the current
-buffer exactly as if you'd typed it with god mode off, including running
-any commands it may have triggered. Useful with, e.g.,
-`org-use-speed-commands'."
+    "Run a command or insert a character without leaving god mode.
+Reads a single CHAR from the minibuffer and executes it in
+the current buffer buffer exactly as if you'd typed it with god
+mode off, including running any commands it may have triggered.
+Useful with, e.g., `org-use-speed-commands'."
     (interactive (list (read-char-from-minibuffer "Perform char: ")))
     (god-local-mode -1)
     (execute-kbd-macro (vector char))
@@ -259,13 +256,13 @@ any commands it may have triggered. Useful with, e.g.,
 
 ;;;###autoload
 (define-minor-mode motion-selection-mode
-    "A modal editing minor mode for Emacs built on top of `god-mode'
-that gives Emacs users a Vim-like text editing grammar by making
+    "A modal editing minor mode for Emacs built on top of `god-mode'.
+Gives Emacs users a Vim-like text editing grammar by making
 motion commands select the text objects that they step over, and
 then treating region commands as general-purpose verbs to act on
-;; text objects, not unlike the grammar of meow, but still using the
+text objects, not unlike the grammar of meow, but still using the
 entirely Emacs-native set of commands, concepts, mnemonics, and
-keymaps, requiring no extra integration with the rest of emacs at
+keymaps, requiring no extra integration with the rest of Emacs at
 all."
     :global t
     :lighter " Motion-Selection"
@@ -275,10 +272,6 @@ all."
     (setq god-exempt-predicates nil)
     ;; Enable god mode globally
     (god-mode)
-
-    ;; We want an in-line visual indication of whether we're in god
-    ;; mode or not
-    (add-hook 'post-command-hook #'motion-selection-god-mode-update-cursor-type)
 
     ;; Kakoune-style motion-selection--motion-selection
     (add-hook 'deactivate-mark-hook (lambda ()
