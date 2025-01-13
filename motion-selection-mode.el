@@ -135,7 +135,9 @@ control keys. It feels almost telepathic to me."
         (funcall fun)))
 
 (defun motion-selection--deselect ()
-    "Deselect the current selection if the user does not appear to be in the process of running a command on it."
+    "Deselect the current selection if the user is not active.
+That is, only takes effect if the user does not appear to be in
+the process of running a command on the selection."
     (interactive)
     (when (or executing-kbd-macro
               (and god-local-mode
@@ -277,7 +279,7 @@ all."
     (add-hook 'deactivate-mark-hook (lambda ()
                                         (setq motion-selection--intentional-region-active nil)))
 
-    (add-hook 'post-command-hook 'motion-selection--motion-selection)
+    (add-hook 'post-command-hook #'motion-selection--motion-selection)
 
     ;; When we're overwriting text, we want to actually be
     ;; able to edit text automatically without interference
@@ -328,10 +330,10 @@ all."
     ;; bindings. Let's fix that
     (define-key global-map (kbd "C-r") (motion-selection-isearch-auto-timer #'isearch-backward))
     (define-key global-map (kbd "C-s") (motion-selection-isearch-auto-timer #'isearch-forward))
-    (define-key global-map (kbd "C-S-Q") 'motion-selection-single-shot-char)
-    (define-key global-map (kbd "C-S-D") 'motion-selection--deselect)
-    (advice-add 'org-speed-move-safe :before (defun motion-selection--org-speed-move-safe (&rest r) "Don't select anything when we're moving using org speed mode" (motion-selection-mode -1)))
-    (advice-add 'org-speed-move-safe :after (defun motion-selection--org-speed-move-safe-undo (&rest r) "Turn selection on after." (motion-selection-mode 1)))
+    (define-key global-map (kbd "C-S-Q") #'motion-selection-single-shot-char)
+    (define-key global-map (kbd "C-S-D") #'motion-selection--deselect)
+    (advice-add 'org-speed-move-safe :before (defun motion-selection--org-speed-move-safe (&rest _r) "Don't select anything when we're moving using org speed mode" (motion-selection-mode -1)))
+    (advice-add 'org-speed-move-safe :after (defun motion-selection--org-speed-move-safe-undo (&rest _r) "Turn selection on after." (motion-selection-mode 1)))
 
     (when (not repeat-mode)
         (repeat-mode 1)))
