@@ -270,7 +270,6 @@ all."
     :lighter " Motion-Selection"
     :group 'motion-selection
 ;;;;; God Mode Basics
-    (setq god-exempt-major-modes nil)
     (setq god-exempt-predicates nil)
     ;; Enable god mode globally
     (god-mode)

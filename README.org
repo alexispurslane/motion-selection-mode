@@ -5,6 +5,8 @@
 
 [[https://github.com/alexispurslane/prometheus-mode/actions/workflows/melpa.yaml/badge.svg]]
 
+[[https://melpa.org/#/motion-selection-mode][file:https://melpa.org/packages/motion-selection-mode-badge.svg]]
+
 ** Overview
 :PROPERTIES:
 :ID:       458a92d8-3aa7-404e-9afd-1f329bf9c7d3
@@ -24,11 +26,12 @@ editing grammar. Key features:
 :ID:       616554d7-e8e0-43da-bfa2-29c08dbcac0d
 :END:
 
-I'm planning to get this package into MELPA soon. In the meantime, just download =motion-selection-mode.el= and put it in your load path, then use:
+Installing from MELPA with ~use-package~:
 
 #+begin_src emacs-lisp
-  (require 'motion-selection-mode)
-  (motion-selection-mode 1)
+      (use-package motion-selection-mode
+          :config
+          (motion-selection-mode 1))
 #+end_src
 
 ** Explanation
