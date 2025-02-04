@@ -140,6 +140,7 @@ That is, only takes effect if the user does not appear to be in
 the process of running a command on the selection."
     (interactive)
     (when (or executing-kbd-macro
+              defining-kbd-macro
               (and god-local-mode
                    ;; if the minibuffer is open and focused,
                    ;; then the user is probably in the middle
@@ -212,7 +213,6 @@ commands on this selection."
                motion-selection-auto-timer-time nil
                (lambda ()
                    (if defining-kbd-macro
-                           ;; FIXME [#A]: Do something so that this timer being run is recorded by the kmacro in progress
                            (setq unread-command-events (listify-key-sequence (kbd "C-S-D")))
                        (motion-selection--deselect)))))
           ;; we set two marks here so that if there are
